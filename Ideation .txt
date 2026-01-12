@@ -1,0 +1,32 @@
+1. Idea is to build web application to solve this problem statement, 
+	AI-Assisted Resume & JD Matcher
+	Core: Upload/paste resume + JD; manual score/match skills; save history.
+	
+	Solution idea: Creating parallel user and company web application to match user resume with company job application JD with manual resume score. 
+	
+2. React pages for 
+	i. sign in/sign up page for user and company.
+	ii. User dashboard to view all company opportunities. 
+	iii. User profile page to add resume and create, update profile details. 
+	iv. Company dashboard to add job applications and to show posted list of applications. 
+	v. Dashboard for each application to show candidates resume score sorted in descending order. 
+	vi. Job opportunity page to view Job Description and click apply button. 
+	vii. Candidate page for comapany to view applicant profile and Shortlist button.
+	viii. Shortlisted candidates page.
+	
+3. Backend logic using Django 
+	i. Storing user and comany credentials. 
+	ii. Storing user profile. 
+	iii. Storing company profile. 
+	iv. Storing company job descriptions. 
+	v. Storing user applications. 
+	vi. Extraction of resume pdf or word to copy paste in profile page. 
+	vii. Manual resume matcher with keywords and score based on keyword count. 
+	
+4. PostgreSql tables
+	i. Credentials table. 
+	ii. User profile table. 
+	iii. Company profile table. 
+	iv. User applications table. 
+	v. Company JDs table. 
+	vi. Shortlisted candidates table. 

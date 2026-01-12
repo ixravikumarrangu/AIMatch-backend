@@ -1,0 +1,67 @@
+User:
+1. user id 
+2. First Name 
+3. Middle Name 
+4. Last Name 
+5. Email
+6. Links
+7. Skills
+8. Experience
+9. Projects
+10. Certifications
+11. 
+
+
+{
+  "name": {
+    "first": "",
+    "middle": "",
+    "last": ""
+  },
+  "contact": {
+    "email": "",
+    "phone": "",
+    "location": "",
+    "links": []
+  },
+  "skills": [],
+  "experience": [],
+  "education": [],
+  "projects": [],
+  "certifications": [],
+  "languages_known": [],
+  "keywords":[],
+  "metadata": {
+    "resume_score": 0,
+    "last_updated": ""
+  }
+}
+
+{
+  "name": {
+    "first": "",
+    "middle": "",
+    "last": ""
+  },
+  "contact": {
+    "email": "",
+    "phone": "",
+    "location": "",
+    "links": []
+  },
+  "skills": [],
+  "experience": [],
+  "education": [],
+  "projects": [],
+  "certifications": [],
+  "languages_known": [],
+  "keywords":[]
+}
+
+Company:
+1. company id 
+2. app id 
+3. 
+
+
+openrouter: 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

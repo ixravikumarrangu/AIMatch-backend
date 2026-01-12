@@ -1,0 +1,117 @@
+PostgreSQL Database Schema (DDL)
+
+1. user_credentials
+
+CREATE TABLE user_credentials (
+    user_id BIGSERIAL PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+2. company_credentials
+CREATE TABLE company_credentials (
+    company_id BIGSERIAL PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+3. user_profile
+CREATE TABLE user_profile (
+    user_id BIGINT PRIMARY KEY,
+    full_name VARCHAR(150) NOT NULL,
+    phone VARCHAR(20),
+    location VARCHAR(100),
+    total_experience NUMERIC(4,1) CHECK (total_experience >= 0),
+    resume_text TEXT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_user_profile_user
+        FOREIGN KEY (user_id)
+        REFERENCES user_credentials(user_id)
+        ON DELETE CASCADE
+);
+
+4. user_skills
+CREATE TABLE user_skills (
+    skill_id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    skill_name VARCHAR(100) NOT NULL,
+
+    CONSTRAINT fk_user_skills_user
+        FOREIGN KEY (user_id)
+        REFERENCES user_credentials(user_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT uq_user_skill UNIQUE (user_id, skill_name)
+);
+
+5. company_profile
+CREATE TABLE company_profile (
+    company_id BIGINT PRIMARY KEY,
+    company_name VARCHAR(200) NOT NULL,
+    description TEXT,
+    website VARCHAR(255),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_company_profile
+        FOREIGN KEY (company_id)
+        REFERENCES company_credentials(company_id)
+        ON DELETE CASCADE
+);
+
+6. company_job_description
+CREATE TABLE company_job_description (
+    job_id BIGSERIAL PRIMARY KEY,
+    company_id BIGINT NOT NULL,
+    job_role VARCHAR(150) NOT NULL,
+    required_experience NUMERIC(4,1) CHECK (required_experience >= 0),
+    job_description TEXT,
+    jd_text TEXT,
+    status VARCHAR(30) NOT NULL,
+    deadline DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_job_company
+        FOREIGN KEY (company_id)
+        REFERENCES company_credentials(company_id)
+        ON DELETE CASCADE
+);
+
+7. job_required_skills
+CREATE TABLE job_required_skills (
+    id BIGSERIAL PRIMARY KEY,
+    job_id BIGINT NOT NULL,
+    skill_name VARCHAR(100) NOT NULL,
+    priority INT CHECK (priority BETWEEN 1 AND 5),
+
+    CONSTRAINT fk_job_skill_job
+        FOREIGN KEY (job_id)
+        REFERENCES company_job_description(job_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT uq_job_skill UNIQUE (job_id, skill_name)
+);
+
+8. user_application
+CREATE TABLE user_application (
+    application_id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    job_id BIGINT NOT NULL,
+    application_status VARCHAR(30) NOT NULL,
+    ats_score NUMERIC(5,2) CHECK (ats_score BETWEEN 0 AND 100),
+    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_application_user
+        FOREIGN KEY (user_id)
+        REFERENCES user_credentials(user_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_application_job
+        FOREIGN KEY (job_id)
+        REFERENCES company_job_description(job_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT uq_user_job UNIQUE (user_id, job_id)
+);

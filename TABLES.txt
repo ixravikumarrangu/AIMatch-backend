@@ -1,0 +1,96 @@
+TABLES :
+	1)user_credentials
+	2)company_credentials
+	3)user_profile
+	4)user_skills
+	5)user_application
+	6)company_profile
+	7)company_job_description
+	8)job_required_skills
+
+1)user_credentials:
+		user_id (PK)
+		email	
+		password_hash
+		created_at
+		
+2)company_credentials:
+		company_id (PK)
+		email
+		password_hash
+		created_at
+		
+3)user_profile :
+		user_id (PK, FK)
+		full_name
+		phone
+		location
+		total_experience
+		resume_text
+		updated_at
+
+4)user_skills :
+		skill_id (PK)
+		user_id (FK)
+		skill_name
+		
+
+5)user_application:
+		application_id (PK)
+		user_id (FK)
+		job_id (FK)
+		application_status
+		ats_score
+		applied_at
+
+		
+6)company_profile:
+		company_id (PK, FK)
+		company_name
+		description
+		website
+		updated_at
+		
+7)company_job_description :
+	    job_id (PK)
+		company_id (FK)
+		job_role
+		required_experience
+		job_description
+		jd_text
+		status
+		deadline
+		created_at
+
+8)job_required_skills:
+		id (PK)
+		job_id (FK)
+		skill_name
+		priority
+
+
+
+
+
+
+                                                                                                                                                                                                                                                                                                                   
+		     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	

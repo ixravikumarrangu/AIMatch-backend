@@ -1,0 +1,49 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Django/Database
+db.sqlite3
+
+# Environment
+*.env
+
+# Bun/Node/Other lock files
+*.lockb
+
+# Node.js
+node_modules/
+
+# VSCode/IDE
+.vscode/
+.idea/
+.DS_Store
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Django/Database
+db.sqlite3
+
+# Environment
+*.env
+
+# Bun/Node/Other lock files
+*.lockb
+package-lock.json
+
+# Node.js
+node_modules/
+
+# Build/IDE/OS
+.vscode/
+.idea/
+.DS_Store
+
+# PDF and binary artifacts
+*.pdf
+
+# Ignore text files that are not source (optional, if not needed in repo)
+# *.txt

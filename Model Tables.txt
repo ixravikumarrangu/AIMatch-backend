@@ -63,5 +63,5 @@ Company:
 2. app id 
 3. 
 
-
-openrouter: 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
+#saved
+openrouter: 

@@ -44,19 +44,45 @@ const CompanyDashboard = () => {
       `http://127.0.0.1:8000/api/company/company-jobs/?company=${company_id}`
     )
       .then((res) => (res.ok ? res.json() : []))
+      // .then(async (jobList) => {
+      //   // For each job, fetch applicants
+      //   const jobsWithApplicants = await Promise.all(
+      //     jobList.map(async (job) => {
+      //       const res = await fetch(
+      //         `http://127.0.0.1:8000/api/company/job-applicants/?job=${job.id}`
+      //       );
+      //       const applicants = res.ok ? await res.json() : [];
+      //       return { ...job, applicants };
+      //     })
+      //   );
+      //   setJobs(jobsWithApplicants);
+      // })
       .then(async (jobList) => {
-        // For each job, fetch applicants
-        const jobsWithApplicants = await Promise.all(
-          jobList.map(async (job) => {
-            const res = await fetch(
-              `http://127.0.0.1:8000/api/company/job-applicants/?job=${job.id}`
-            );
-            const applicants = res.ok ? await res.json() : [];
-            return { ...job, applicants };
-          })
-        );
-        setJobs(jobsWithApplicants);
-      })
+  const normalizedJobs = await Promise.all(
+    jobList.map(async (job) => {
+      const res = await fetch(
+        `http://127.0.0.1:8000/api/company/job-applicants/?job=${job.job_id}`
+      );
+      const applicants = res.ok ? await res.json() : [];
+
+      return {
+        id: job.job_id,
+        jobTitle: job.job_title,
+        companyName: companyData.company_name || "Company",
+        location: job.location,
+        salary: job.salary,
+        postedDate: job.created_at,
+        skills: typeof job.skills === "string"
+          ? job.skills.split(",").map(s => s.trim())
+          : [],
+        applicants
+      };
+    })
+  );
+
+  setJobs(normalizedJobs);
+})
+
       .catch((err) => {
         setJobs([]);
         window.__DASHBOARD_ERROR = "Error fetching jobs: " + err;
@@ -93,7 +119,7 @@ const CompanyDashboard = () => {
 
   const filteredJobs = jobs.filter(
     (job) =>
-      job.jobTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (job.jobTitle || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       job.location.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -131,7 +157,7 @@ const CompanyDashboard = () => {
     {
       label: "This Month",
       value: jobs.filter((j) => {
-        const jobDate = new Date(j.postedDate);
+        const jobDate = j.postedDate ? new Date(j.postedDate) : null;
         const now = new Date();
         return (
           jobDate.getMonth() === now.getMonth() &&
@@ -296,7 +322,7 @@ const CompanyDashboard = () => {
                   <div className="flex items-center gap-6">
                     <div className="hidden md:block">
                       <div className="flex flex-wrap gap-2">
-                        {job.skills.slice(0, 3).map((skill) => (
+                        {(Array.isArray(job.skills) ? job.skills : []).slice(0, 3).map((skill) => (
                           <span
                             key={skill}
                             className="px-3 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary"

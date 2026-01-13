@@ -45,24 +45,21 @@ const PostJob = ({ isOpen, onClose, onSubmit, companyName }) => {
       return;
     }
     const payload = {
-      company: company_id,
-      job_title: formData.jobTitle,
-      company_name: companyData.company_name || "",
-      location: formData.location,
-      salary: formData.salary,
-      employment_type: formData.employmentType,
-      experience_level: formData.experienceLevel,
-      description: formData.description,
-      responsibilities: formData.responsibilities
-        .split("\n")
-        .filter((r) => r.trim()),
-      requirements: formData.requirements.split("\n").filter((r) => r.trim()),
-      skills: formData.skills
-        .split(",")
-        .map((s) => s.trim())
-        .filter((s) => s),
-      benefits: formData.benefits.split("\n").filter((b) => b.trim()),
-    };
+  company: company_id,
+  job_title: formData.jobTitle,
+  location: formData.location,
+  salary: formData.salary,
+  employment_type: formData.employmentType,
+  experience_level: formData.experienceLevel,
+
+  job_description: formData.description,
+
+  responsibilities: formData.responsibilities,
+  requirements: formData.requirements,
+  skills: formData.skills,          // comma-separated string
+  benefits: formData.benefits
+};
+
     try {
       const res = await fetch(
         "http://127.0.0.1:8000/api/company/company-jobs/",

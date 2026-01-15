@@ -114,7 +114,7 @@ const CompanyDashboard = () => {
   };
 
   const handleJobClick = (jobId) => {
-    navigate(`/company-dashboard/job/${jobId}`);
+    navigate(`/company/dashboard/job/${jobId}`);
   };
 
   const filteredJobs = jobs.filter(

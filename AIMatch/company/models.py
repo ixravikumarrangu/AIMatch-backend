@@ -8,6 +8,10 @@ class CompanyCredentials(models.Model):
 	password_hash = models.TextField()
 	created_at = models.DateTimeField(auto_now_add=True)
 
+	@property
+	def is_authenticated(self):
+		return True
+
 	class Meta:
 		db_table = 'company_credentials'
 

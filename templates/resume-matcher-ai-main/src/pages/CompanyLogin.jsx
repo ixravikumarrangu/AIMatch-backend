@@ -20,44 +20,37 @@ const CompanyLogin = () => {
 
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/api/company/company-credentials/?email=" +
-          encodeURIComponent(formData.email),
+        "http://127.0.0.1:8000/api/company/login/",
         {
-          method: "GET",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+              email: formData.email,
+              password: formData.password
+          })
         }
       );
 
-      if (response.ok) {
-        const data = await response.json();
-        if (!Array.isArray(data) || data.length === 0) {
-          alert("Invalid email or password");
-          setIsLoading(false);
-          return;
-        }
-        // Find the company row with exact email match (case-insensitive)
-        const company = data.find(
-          (row) =>
-            row.email &&
-            row.email.toLowerCase() === formData.email.toLowerCase()
-        );
-        if (company && company.password_hash === formData.password) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
           localStorage.setItem("companyAuth", "true");
+          localStorage.setItem("authToken", data.token);
           localStorage.setItem(
             "companyData",
-            JSON.stringify({ email: formData.email })
+            JSON.stringify({ 
+                email: data.email,
+                company_id: data.company_id
+            })
           );
           setIsLoading(false);
           navigate("/company/dashboard");
-        } else {
-          alert("Invalid email or password");
-          setIsLoading(false);
-        }
       } else {
-        alert("Login failed");
+        alert("Login failed: " + (data.error || "Invalid credentials"));
         setIsLoading(false);
       }
     } catch (err) {
+      console.error(err);
       alert("Network error");
       setIsLoading(false);
     }

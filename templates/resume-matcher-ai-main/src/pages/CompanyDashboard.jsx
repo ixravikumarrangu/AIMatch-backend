@@ -28,8 +28,10 @@ const CompanyDashboard = () => {
   useEffect(() => {
     // Fetch jobs for this company and their applicants
     let companyData;
+    let token;
     try {
       companyData = JSON.parse(localStorage.getItem("companyData") || "{}");
+      token = localStorage.getItem("authToken");
     } catch (e) {
       companyData = {};
     }
@@ -40,49 +42,40 @@ const CompanyDashboard = () => {
         "Missing company_id in localStorage. Please login again.";
       return;
     }
+
+    const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+
     fetch(
-      `http://127.0.0.1:8000/api/company/company-jobs/?company=${company_id}`
+      `http://127.0.0.1:8000/api/company/company-jobs/?company=${company_id}`,
+      { headers }
     )
       .then((res) => (res.ok ? res.json() : []))
-      // .then(async (jobList) => {
-      //   // For each job, fetch applicants
-      //   const jobsWithApplicants = await Promise.all(
-      //     jobList.map(async (job) => {
-      //       const res = await fetch(
-      //         `http://127.0.0.1:8000/api/company/job-applicants/?job=${job.id}`
-      //       );
-      //       const applicants = res.ok ? await res.json() : [];
-      //       return { ...job, applicants };
-      //     })
-      //   );
-      //   setJobs(jobsWithApplicants);
-      // })
       .then(async (jobList) => {
-  const normalizedJobs = await Promise.all(
-    jobList.map(async (job) => {
-      const res = await fetch(
-        `http://127.0.0.1:8000/api/company/job-applicants/?job=${job.job_id}`
-      );
-      const applicants = res.ok ? await res.json() : [];
+        const normalizedJobs = await Promise.all(
+          jobList.map(async (job) => {
+            const res = await fetch(
+              `http://127.0.0.1:8000/api/company/jobs/${job.job_id}/applications/`,
+              { headers }
+            );
+            const applicants = res.ok ? await res.json() : [];
 
-      return {
-        id: job.job_id,
-        jobTitle: job.job_title,
-        companyName: companyData.company_name || "Company",
-        location: job.location,
-        salary: job.salary,
-        postedDate: job.created_at,
-        skills: typeof job.skills === "string"
-          ? job.skills.split(",").map(s => s.trim())
-          : [],
-        applicants
-      };
-    })
-  );
+            return {
+              id: job.job_id,
+              jobTitle: job.job_title,
+              companyName: companyData.company_name || "Company",
+              location: job.location,
+              salary: job.salary,
+              postedDate: job.created_at,
+              skills: typeof job.skills === "string"
+                ? job.skills.split(",").map(s => s.trim())
+                : [],
+              applicants
+            };
+          })
+        );
 
-  setJobs(normalizedJobs);
-})
-
+        setJobs(normalizedJobs);
+      })
       .catch((err) => {
         setJobs([]);
         window.__DASHBOARD_ERROR = "Error fetching jobs: " + err;
@@ -100,14 +93,21 @@ const CompanyDashboard = () => {
   const handlePostJob = () => {
     // After posting, refetch jobs from backend
     const companyData = JSON.parse(localStorage.getItem("companyData") || "{}");
+    const token = localStorage.getItem("authToken");
     const company_id = companyData.company_id;
+
     if (company_id) {
+      const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+      
       fetch(
-        `http://127.0.0.1:8000/api/company/company-jobs/?company=${company_id}`
+        `http://127.0.0.1:8000/api/company/company-jobs/?company=${company_id}`,
+        { headers }
       )
         .then((res) => (res.ok ? res.json() : []))
         .then((jobList) => {
-          setJobs(jobList);
+          // Note: In a real app we would re-normalize this data as we did in useEffect
+          // For now, we will just force a reload or re-fetch properly
+          window.location.reload(); 
         });
     }
     setIsPostJobOpen(false);

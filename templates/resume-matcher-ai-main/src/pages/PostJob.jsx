@@ -39,13 +39,16 @@ const PostJob = ({ isOpen, onClose, onSubmit, companyName }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     // Prepare job data for backend
-    const company_id = companyData.company_id;
-    if (!company_id) {
-      alert("Company ID not found. Please complete your company profile.");
+    const companyData = JSON.parse(localStorage.getItem("companyData") || "{}");
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+      alert("Authentication token missing. Please login again.");
       return;
     }
+    
     const payload = {
-  company: company_id,
+  // company: company_id, // Handled by backend via Token
   job_title: formData.jobTitle,
   location: formData.location,
   salary: formData.salary,
@@ -65,7 +68,10 @@ const PostJob = ({ isOpen, onClose, onSubmit, companyName }) => {
         "http://127.0.0.1:8000/api/company/company-jobs/",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
           body: JSON.stringify(payload),
         }
       );

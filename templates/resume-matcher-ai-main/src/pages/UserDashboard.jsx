@@ -423,33 +423,46 @@ const UserDashboard = () => {
   ========================== */
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem("userData") || "{}");
+    const token = localStorage.getItem("authToken");
+
     if (!userData.email) return;
 
-    // 1️⃣ Get user_id
-    fetch(
-      `http://127.0.0.1:8000/api/user/user-credentials/?email=${encodeURIComponent(
-        userData.email
-      )}`
-    )
-      .then((res) => res.json())
-      .then((cred) => {
-        if (Array.isArray(cred) && cred.length > 0) {
-          const userId = cred[0].user_id;
-
-          // 2️⃣ Fetch user applications
-          fetch(
-            `http://127.0.0.1:8000/api/user/user-applications/?user=${userId}`
-          )
-            .then((res) => res.json())
-            .then((apps) => setApplications(apps || []));
+    const fetchApplications = (userId) => {
+       fetch(
+        `http://127.0.0.1:8000/api/user/user-applications/?user=${userId}`,
+        {
+          headers: token ? { "Authorization": `Bearer ${token}` } : {} 
         }
-      });
+      )
+        .then((res) => res.json())
+        .then((apps) => setApplications(apps || []));
+    };
+
+    if (userData.user_id) {
+       fetchApplications(userData.user_id);
+    } else {
+        // Fallback for old sessions (though login clears this)
+        fetch(
+          `http://127.0.0.1:8000/api/user/user-credentials/?email=${encodeURIComponent(
+            userData.email
+          )}`
+        )
+          .then((res) => res.json())
+          .then((cred) => {
+            if (Array.isArray(cred) && cred.length > 0) {
+              const userId = cred[0].user_id;
+              fetchApplications(userId);
+            }
+          });
+    }
 
     // 3️⃣ Fetch ALL jobs
-    fetch("http://127.0.0.1:8000/api/company/company-jobs/")
+    fetch("http://127.0.0.1:8000/api/company/company-jobs/", {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    })
       .then((res) => res.json())
       .then((jobList) => {
-        const normalized = jobList.map((job) => ({
+        const normalized = (Array.isArray(jobList) ? jobList : []).map((job) => ({
           id: job.job_id,
           jobTitle: job.job_title || "",
           companyName: job.company_name || "Company",
@@ -468,6 +481,50 @@ const UserDashboard = () => {
   /* =========================
      HELPERS
   ========================== */
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate("/");
+  };
+
+  const handleProfile = () => {
+    navigate("/Profile");
+  };
+
+  const handleFileChange = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const userData = JSON.parse(localStorage.getItem("userData") || "{}");
+    const token = localStorage.getItem("authToken");
+
+    if (!userData.user_id) {
+        alert("User ID missing. Please login again.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("resume", file);
+    formData.append("user_id", userData.user_id);
+
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/user/upload_resume/", {
+        method: "POST",
+        // Do NOT set Content-Type for FormData, browser sets it with boundary
+        headers: token ? { "Authorization": `Bearer ${token}` } : {},
+        body: formData,
+      });
+      if (res.ok) {
+        alert("Resume uploaded successfully!");
+      } else {
+        const data = await res.json();
+        alert("Upload failed: " + (data.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Network error");
+    }
+  };
+
   const getStatusIcon = (status) => {
     if (status === "shortlisted")
       return <CheckCircle2 className="w-5 h-5 text-success" />;
@@ -478,14 +535,15 @@ const UserDashboard = () => {
 
   const filteredApplications = applications.filter((app) => {
     const matchesSearch =
-      (app.jobTitle || "")
+      (app.job_details?.job_title || "")
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      (app.companyName || "")
+      (app.job_details?.company_name || "")
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
     const matchesFilter =
-      filterStatus === "all" || app.status === filterStatus;
+      filterStatus === "all" || app.application_status === filterStatus; // Use application_status here
+
     return matchesSearch && matchesFilter;
   });
 
@@ -497,12 +555,12 @@ const UserDashboard = () => {
     },
     {
       label: "Shortlisted",
-      value: applications.filter((a) => a.status === "shortlisted").length,
+      value: applications.filter((a) => a.application_status === "shortlisted").length,
       icon: CheckCircle2,
     },
     {
       label: "Under Review",
-      value: applications.filter((a) => a.status === "applied").length,
+      value: applications.filter((a) => a.application_status === "applied").length,
       icon: Clock,
     },
     {
@@ -630,9 +688,9 @@ const UserDashboard = () => {
               <div key={app.id} className="card-interactive p-6">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h3 className="font-semibold">{app.jobTitle}</h3>
+                    <h3 className="font-semibold">{app.job_details.job_title}</h3>
                     <p className="text-sm text-muted-foreground">
-                      {app.companyName}
+                      {app.job_details.company_name}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

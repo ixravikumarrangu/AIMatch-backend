@@ -207,7 +207,7 @@ const Profile = () => {
       skills: formData.skills,
       education: formData.education,
       about: formData.about,
-      resume_text: formData.resume_text || "",
+      // resume_text excluded to prevent overwriting
     };
     // Try PATCH first
     let res = await fetch(

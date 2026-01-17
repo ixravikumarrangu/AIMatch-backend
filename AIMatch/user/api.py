@@ -731,6 +731,8 @@ import io
 import os
 import pdfplumber
 from datetime import date
+import hashlib
+from .jwt_utils import generate_jwt
 
 from user.ats_engine import compute_from_parsed
 from user.models import UserProfile, UserCredentials, UserSkills, UserApplication
@@ -741,6 +743,54 @@ from .serializers import (
     UserSkillsSerializer,
     UserApplicationSerializer
 )
+
+# --------------------------------------------------
+# JWT LOGIN API
+# --------------------------------------------------
+@api_view(["POST"])
+def login_user(request):
+    email = request.data.get("email")
+    password = request.data.get("password")
+
+    if not email or not password:
+        return Response(
+            {"error": "Email and password required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Find user
+    try:
+        user = UserCredentials.objects.get(email=email)
+    except UserCredentials.DoesNotExist:
+        return Response(
+            {"error": "Invalid credentials"},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    # Hash password to compare with stored hash
+    # Frontend uses SHA256 via crypto-js
+    hashed_input = hashlib.sha256(password.encode('utf-8')).hexdigest()
+
+    if hashed_input != user.password_hash:
+        return Response(
+            {"error": "Invalid credentials"},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    # Generate Token
+    payload = {
+        "user_id": user.user_id,
+        "email": user.email,
+        "role": "user"
+    }
+    token = generate_jwt(payload)
+
+    return Response({
+        "success": True,
+        "token": token,
+        "user_id": user.user_id,
+        "email": user.email
+    })
 
 # --------------------------------------------------
 # SAFE JSON EXTRACTOR (🔥 CRITICAL)
@@ -995,16 +1045,22 @@ def upload_resume(request):
     }
 
     # ---------- LLM CALL ----------
-    try:
-        resp = requests.post(api_url, json=payload, headers=headers, timeout=120)
-        resp.raise_for_status()
-        llm_json = resp.json()
-        output_text = llm_json["choices"][0]["message"]["content"]
-    except Exception as e:
-        return Response(
-            {"error": "LLM request failed", "detail": str(e)},
-            status=status.HTTP_502_BAD_GATEWAY
-        )
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            resp = requests.post(api_url, json=payload, headers=headers, timeout=120)
+            resp.raise_for_status()
+            llm_json = resp.json()
+            output_text = llm_json["choices"][0]["message"]["content"]
+            break # Success, exit loop
+        except Exception as e:
+            if attempt == max_retries - 1:
+                return Response(
+                    {"error": "LLM request failed after retries", "detail": str(e)},
+                    status=status.HTTP_502_BAD_GATEWAY
+                )
+            import time
+            time.sleep(2) # Wait 2 seconds before retrying
 
     parsed = extract_resume_json(output_text)
     if not parsed:
@@ -1025,14 +1081,24 @@ def upload_resume(request):
         status=status.HTTP_200_OK
     )
 
-# --------------------------------------------------
-# VIEWSETS
-# --------------------------------------------------
+from rest_framework import viewsets
+from rest_framework.decorators import authentication_classes, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from user.authentication import JWTAuthentication
+from django_filters.rest_framework import DjangoFilterBackend
+from .models import UserCredentials, UserProfile, UserSkills, UserApplication
+from .serializers import (
+    UserCredentialsSerializer,
+    UserProfileSerializer,
+    UserSkillsSerializer,
+    UserApplicationSerializer
+)
+
 class UserCredentialsViewSet(viewsets.ModelViewSet):
     queryset = UserCredentials.objects.all()
     serializer_class = UserCredentialsSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["email"]
+    filterset_fields = ['email']
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
@@ -1046,6 +1112,12 @@ class UserSkillsViewSet(viewsets.ModelViewSet):
 class UserApplicationViewSet(viewsets.ModelViewSet):
     queryset = UserApplication.objects.all()
     serializer_class = UserApplicationSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Filter applications by the logged-in user
+        return UserApplication.objects.filter(user_id=self.request.user.user_id)
 
     @action(detail=False, methods=["post"], url_path="prepare-ats")
     def prepare_ats(self, request):

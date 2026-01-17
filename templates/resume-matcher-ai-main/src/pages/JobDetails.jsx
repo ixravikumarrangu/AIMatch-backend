@@ -366,15 +366,20 @@ const JobDetails = () => {
   const [jobDetails, setJobDetails] = useState(null);
   const [isApplying, setIsApplying] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
+  const [applicationStatusMessage, setApplicationStatusMessage] = useState("");
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   /* =========================
      FETCH JOB FROM BACKEND
   ========================== */
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/company/company-jobs/")
+    const token = localStorage.getItem("authToken");
+    const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+
+    fetch("http://127.0.0.1:8000/api/company/company-jobs/", { headers })
       .then((res) => res.json())
       .then((jobs) => {
-        const job = jobs.find(
+        const job = (Array.isArray(jobs) ? jobs : []).find(
           (j) => String(j.job_id) === String(jobId)
         );
 
@@ -383,7 +388,7 @@ const JobDetails = () => {
         setJobDetails({
           id: job.job_id,
           jobTitle: job.job_title,
-          companyName: "Company",
+          companyName: job.company_name || "Company", // Use the provided company_name
           location: job.location,
           salary: job.salary,
           employmentType: job.employment_type,
@@ -424,11 +429,18 @@ const JobDetails = () => {
     setIsApplying(true);
 
     const userData = JSON.parse(localStorage.getItem("userData") || "{}");
+    const token = localStorage.getItem("authToken");
     const userId = userData.user_id; // make sure this exists
 
     if (!userId) {
       alert("User not logged in");
       return;
+    }
+
+    // Ensure token exists
+    if (!token) {
+        alert("Authentication token missing. Please login again.");
+        return;
     }
 
     const response = await fetch(
@@ -437,6 +449,7 @@ const JobDetails = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
           user_id: userId,
@@ -448,18 +461,23 @@ const JobDetails = () => {
     const data = await response.json();
 
     if (!response.ok) {
-      alert(data.error || "Application failed");
+      setApplicationStatusMessage(data.error || "Application failed.");
+      setShowSuccessMessage(true);
       return;
     }
 
     setHasApplied(true);
+    setApplicationStatusMessage("Application submitted successfully!");
+    setShowSuccessMessage(true);
 
-    alert(
-      `Application submitted successfully!\nATS Score: ${data.ats_score}`
-    );
+    setTimeout(() => {
+      setShowSuccessMessage(false);
+      setApplicationStatusMessage("");
+    }, 5000); // Hide message after 5 seconds
   } catch (error) {
     console.error(error);
-    alert("Something went wrong while applying");
+    setApplicationStatusMessage("Something went wrong while applying.");
+    setShowSuccessMessage(true);
   } finally {
     setIsApplying(false);
   }
@@ -548,6 +566,12 @@ const JobDetails = () => {
           >
             {hasApplied ? "Already Applied" : "Apply for this position"}
           </button>
+
+          {showSuccessMessage && (
+            <div className="mt-4 p-3 rounded-md bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
+              {applicationStatusMessage}
+            </div>
+          )}
         </div>
 
         {/* ABOUT */}

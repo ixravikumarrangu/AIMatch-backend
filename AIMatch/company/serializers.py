@@ -1,6 +1,28 @@
 from rest_framework import serializers
 from .models import CompanyCredentials, CompanyProfile, CompanyJobDescription, JobRequiredSkills
 
+class CompanyNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CompanyProfile
+        fields = ['company_name']
+
+class CompanyJobDescriptionSerializer(serializers.ModelSerializer):
+    company_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CompanyJobDescription
+        fields = '__all__'
+        read_only_fields = ['company', 'job_id', 'created_at']
+
+    def get_company_name(self, obj):
+        # obj is a CompanyJobDescription instance
+        # Try to get the company_name from its related CompanyProfile
+        try:
+            return obj.company.companyprofile.company_name
+        except CompanyProfile.DoesNotExist:
+            return None # Or a default value like "Unknown Company"
+
+
 class CompanyCredentialsSerializer(serializers.ModelSerializer):
     class Meta:
         model = CompanyCredentials
@@ -9,11 +31,6 @@ class CompanyCredentialsSerializer(serializers.ModelSerializer):
 class CompanyProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = CompanyProfile
-        fields = '__all__'
-
-class CompanyJobDescriptionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CompanyJobDescription
         fields = '__all__'
 
 

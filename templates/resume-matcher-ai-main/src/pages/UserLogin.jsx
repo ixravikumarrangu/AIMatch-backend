@@ -41,39 +41,37 @@ const UserLogin = () => {
 
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/api/user/user-credentials/?email=" +
-          encodeURIComponent(loginData.email),
+        "http://127.0.0.1:8000/api/user/login/",
         {
-          method: "GET",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: loginData.email,
+            password: loginData.password
+          })
         }
       );
 
-      if (response.ok) {
-        const data = await response.json();
-        if (!Array.isArray(data) || data.length === 0) {
-          alert("Invalid email or password 2");
-          setIsLoading(false);
-          return;
-        }
-        // If email exists, check password
-        if (data[0].password_hash === sha256(loginData.password).toString()) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
           localStorage.setItem("userAuth", "true");
+          localStorage.setItem("authToken", data.token); // Store JWT
           localStorage.setItem(
             "userData",
-            JSON.stringify({ email: loginData.email })
+            JSON.stringify({ 
+              email: data.email,
+              user_id: data.user_id 
+            })
           );
           setIsLoading(false);
           navigate("/user/dashboard");
-        } else {
-          alert("Invalid email or password 1");
-          setIsLoading(false);
-        }
       } else {
-        alert("Login failed");
-        setIsLoading(false);
+          alert("Login failed: " + (data.error || "Invalid credentials"));
+          setIsLoading(false);
       }
     } catch (err) {
+      console.error(err);
       alert("Network error");
       setIsLoading(false);
     }

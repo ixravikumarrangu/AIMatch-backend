@@ -377,10 +377,13 @@ const JobApplicants = () => {
   const fetchJobAndApplicants = async () => {
     try {
       setLoading(true);
+      const token = localStorage.getItem("authToken");
+      const headers = token ? { "Authorization": `Bearer ${token}` } : {};
 
       /* -------- Fetch job details -------- */
       const jobRes = await fetch(
-        `http://127.0.0.1:8000/api/company/company-jobs/${jobId}/`
+        `http://127.0.0.1:8000/api/company/company-jobs/${jobId}/`,
+        { headers }
       );
       if (jobRes.ok) {
         const job = await jobRes.json();
@@ -395,7 +398,8 @@ const JobApplicants = () => {
 
       /* -------- Fetch applicants -------- */
       const appRes = await fetch(
-        `http://127.0.0.1:8000/api/company/jobs/${jobId}/applications/`
+        `http://127.0.0.1:8000/api/company/jobs/${jobId}/applications/`,
+        { headers }
       );
 
       if (appRes.ok) {
@@ -502,7 +506,7 @@ const JobApplicants = () => {
           </Link>
 
           <button
-            onClick={() => navigate("/company-dashboard")}
+            onClick={() => navigate("/company/dashboard")}
             className="flex items-center gap-2 text-sm"
           >
             <ArrowLeft className="w-4 h-4" />

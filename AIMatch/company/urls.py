@@ -8,6 +8,7 @@ from company.api import (
     CompanyJobDescriptionViewSet,
     JobRequiredSkillsViewSet,
     get_job_applicants,
+    login_company
 )
 
 router = DefaultRouter()
@@ -18,6 +19,7 @@ router.register(r"job-required-skills", JobRequiredSkillsViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),
+    path("login/", login_company, name="company_login"),
 
     # 🔥 Company job → applicants
     path("jobs/<int:job_id>/applications/", get_job_applicants),

@@ -1,18 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, Briefcase, Users, Info, Mail, Sparkles } from "lucide-react";
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const [userAuth, setUserAuth] = useState(false);
+  const [companyAuth, setCompanyAuth] = useState(false);
 
-  const navLinks = [
-    { to: "/", label: "Home", icon: Briefcase },
-    { to: "/company/login", label: "Company", icon: Briefcase },
-    { to: "/user/login", label: "Users", icon: Users },
-    { to: "/about", label: "About", icon: Info },
-    { to: "/contact", label: "Contact", icon: Mail },
-  ];
+  useEffect(() => {
+    setUserAuth(localStorage.getItem("userAuth") === "true");
+    setCompanyAuth(localStorage.getItem("companyAuth") === "true");
+  }, [location]);
+
+  const getNavLinks = () => {
+    const baseLinks = [{ to: "/", label: "Home", icon: Briefcase }];
+    
+    if (companyAuth) {
+      return [
+        ...baseLinks,
+        { to: "/company/dashboard", label: "Dashboard", icon: Briefcase },
+        { to: "/about", label: "About", icon: Info },
+        { to: "/contact", label: "Contact", icon: Mail },
+      ];
+    }
+    
+    if (userAuth) {
+      return [
+        ...baseLinks,
+        { to: "/user/dashboard", label: "Dashboard", icon: Users },
+        { to: "/about", label: "About", icon: Info },
+        { to: "/contact", label: "Contact", icon: Mail },
+      ];
+    }
+
+    return [
+      ...baseLinks,
+      { to: "/company/login", label: "Company", icon: Briefcase },
+      { to: "/user/login", label: "Users", icon: Users },
+      { to: "/about", label: "About", icon: Info },
+      { to: "/contact", label: "Contact", icon: Mail },
+    ];
+  };
+
+  const navLinks = getNavLinks();
 
   const isActive = (path) => {
     if (path === "/") {

@@ -584,7 +584,7 @@ const UserDashboard = () => {
       {/* HEADER */}
       <header className="sticky top-0 z-50 glass-card border-b border-border/50">
         <div className="container mx-auto px-4 h-16 flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/user/dashboard" className="flex items-center gap-2">
             <Sparkles className="w-5 h-5" />
             <span className="font-bold text-lg">AIMatch</span>
           </Link>

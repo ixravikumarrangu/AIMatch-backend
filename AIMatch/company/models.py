@@ -1,6 +1,6 @@
 
 from django.db import models
-
+#from AIMatch.user.models import UserCredentials
 
 class CompanyCredentials(models.Model):
 	company_id = models.BigAutoField(primary_key=True)
@@ -79,3 +79,14 @@ class JobApplicant(models.Model):
 
 	class Meta:
 		db_table = 'job_applicant'
+
+
+class Shortlist(models.Model):
+	shortlist_id = models.BigAutoField(primary_key=True)
+	user = models.ForeignKey('user.UserCredentials', on_delete=models.CASCADE)
+	job = models.ForeignKey(CompanyJobDescription, on_delete=models.CASCADE)
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		db_table = 'shortlist'
+		unique_together = ('user', 'job')

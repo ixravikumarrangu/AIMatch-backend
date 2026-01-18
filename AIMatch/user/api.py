@@ -729,6 +729,7 @@ import json
 import requests
 import io
 import os
+import re
 import pdfplumber
 from datetime import date
 import hashlib
@@ -796,6 +797,8 @@ def login_user(request):
 # SAFE JSON EXTRACTOR (🔥 CRITICAL)
 # --------------------------------------------------
 def extract_resume_json(text: str) -> dict:
+    if not text:
+        return {}
     try:
         text = text.replace("```json", "").replace("```", "").strip()
         data = json.loads(text)
@@ -1130,8 +1133,29 @@ class UserApplicationViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        profile = get_object_or_404(UserProfile, user_id=user_id)
+        #profile = get_object_or_404(UserProfile, user_id=user_id)
+        try:
+            profile = UserProfile.objects.get(user_id=user_id)
+        except UserProfile.DoesNotExist:
+             return Response(
+                {"error": "User profile not found. Please complete your profile or upload a resume first."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not profile.resume_text:
+             return Response(
+                {"error": "Resume not found. Please upload your resume first."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         resume_data = extract_resume_json(profile.resume_text)
+
+        if not resume_data:
+            return Response(
+                {"error": "Resume data invalid or empty. Please re-upload your resume."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
 
         resume_keywords = resume_data.get("keywords") or resume_data.get("skills") or []
 
@@ -1141,11 +1165,16 @@ class UserApplicationViewSet(viewsets.ModelViewSet):
             if job.skills else []
         )
 
+        exp_level_str = str(job.experience_level or "0")
+        found_nums = re.findall(r'\d+', exp_level_str)
+        req_exp = int(found_nums[0]) if found_nums else 0
+
+
         ats_result = compute_from_parsed(
             parsed={"keywords": resume_keywords},
             required_skills_input=required_skills,
             user_experience=0,
-            required_experience=int(job.experience_level or 0),
+            required_experience=req_exp,
             job_role=job.job_title,
             prev_role=""
         )

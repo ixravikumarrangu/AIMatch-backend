@@ -367,7 +367,21 @@ const JobApplicants = () => {
   const [applicants, setApplicants] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [sortOrder, setSortOrder] = useState("none"); // New state for sorting
   const [loading, setLoading] = useState(true);
+  const [selectedApplicants, setSelectedApplicants] = useState(new Set()); // New state for selected applicants
+
+  const handleSelectApplicant = (applicantId, isChecked) => {
+    setSelectedApplicants((prevSelected) => {
+      const newSelected = new Set(prevSelected);
+      if (isChecked) {
+        newSelected.add(applicantId);
+      } else {
+        newSelected.delete(applicantId);
+      }
+      return newSelected;
+    });
+  };
 
   /* ================= FETCH JOB + APPLICANTS ================= */
   useEffect(() => {
@@ -425,7 +439,41 @@ const JobApplicants = () => {
     }
   };
 
-  /* ================= HELPERS ================= */
+  const handleSendShortlistMails = async () => {
+    const applicantIds = Array.from(selectedApplicants);
+    if (applicantIds.length === 0) {
+      alert("Please select applicants to send shortlist mails to.");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("authToken");
+      const headers = {
+        "Content-Type": "application/json",
+        ...(token && { "Authorization": `Bearer ${token}` }),
+      };
+
+      const res = await fetch(
+        `http://127.0.0.1:8000/api/company/send-shortlist-emails/`, // Assuming this endpoint exists
+        {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({ applicant_ids: applicantIds }),
+        }
+      );
+
+      if (res.ok) {
+        alert("Shortlist mails sent successfully!");
+        setSelectedApplicants(new Set()); // Clear selection after sending
+      } else {
+        const errorData = await res.json();
+        alert(`Failed to send shortlist mails: ${errorData.detail || res.statusText}`);
+      }
+    } catch (err) {
+      console.error("Error sending shortlist mails", err);
+      alert("An error occurred while sending shortlist mails.");
+    }
+  };
   const getAtsScoreClass = (score) => {
     if (score >= 80) return "ats-high";
     if (score >= 60) return "ats-medium";
@@ -442,17 +490,25 @@ const JobApplicants = () => {
     return map[status] || map.applied;
   };
 
-  /* ================= FILTER ================= */
-  const filteredApplicants = applicants.filter((a) => {
-    const matchSearch =
-      a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.email.toLowerCase().includes(searchTerm.toLowerCase());
+  /* ================= FILTER & SORT ================= */
+  const filteredAndSortedApplicants = applicants
+    .filter((a) => {
+      const matchSearch =
+        a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.email.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchStatus =
-      filterStatus === "all" || a.status === filterStatus;
+      const matchStatus = filterStatus === "all" || a.status === filterStatus;
 
-    return matchSearch && matchStatus;
-  });
+      return matchSearch && matchStatus;
+    })
+    .sort((a, b) => {
+      if (sortOrder === "ats_desc") {
+        return b.atsScore - a.atsScore;
+      } else if (sortOrder === "ats_asc") {
+        return a.atsScore - b.atsScore;
+      }
+      return 0; // No sorting
+    });
 
   /* ================= STATS ================= */
   const stats = [
@@ -498,7 +554,7 @@ const JobApplicants = () => {
       {/* Header */}
       <header className="sticky top-0 z-50 glass-card border-b">
         <div className="container mx-auto px-4 h-16 flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/company/dashboard" className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
@@ -556,13 +612,58 @@ const JobApplicants = () => {
             <option value="interview">Interview</option>
             <option value="rejected">Rejected</option>
           </select>
+          <select
+            className="input-field"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+          >
+            <option value="none">Sort by: None</option>
+            <option value="ats_desc">ATS Score (High to Low)</option>
+            <option value="ats_asc">ATS Score (Low to High)</option>
+          </select>
+          <input
+            type="checkbox"
+            className="w-5 h-5 accent-primary"
+            onChange={(e) => {
+              if (e.target.checked) {
+                const allApplicantIds = filteredAndSortedApplicants.map((a) => a.id);
+                setSelectedApplicants(new Set(allApplicantIds));
+              } else {
+                setSelectedApplicants(new Set());
+              }
+            }}
+            checked={
+              selectedApplicants.size > 0 &&
+              selectedApplicants.size === filteredAndSortedApplicants.length &&
+              filteredAndSortedApplicants.every((a) => selectedApplicants.has(a.id))
+            }
+          />
+          <label className="text-sm text-muted-foreground">Select All</label>
         </div>
 
+        {selectedApplicants.size > 0 && (
+          <div className="glass-card p-4 rounded-xl mb-6 flex justify-end">
+            <button
+              className="btn-primary"
+              onClick={() => handleSendShortlistMails()}
+              disabled={selectedApplicants.size === 0}
+            >
+              Send Shortlist Mails ({selectedApplicants.size})
+            </button>
+          </div>
+        )}
+
         {/* Applicants */}
-        {filteredApplicants.length ? (
-          filteredApplicants.map((a) => (
-            <div key={a.id} className="card-interactive p-4 mb-3">
-              <div className="flex justify-between items-center">
+        {filteredAndSortedApplicants.length ? (
+          filteredAndSortedApplicants.map((a) => (
+            <div key={a.id} className="card-interactive p-4 mb-3 flex items-center gap-4">
+              <input
+                type="checkbox"
+                className="w-5 h-5 accent-primary"
+                checked={selectedApplicants.has(a.id)}
+                onChange={(e) => handleSelectApplicant(a.id, e.target.checked)}
+              />
+              <div className="flex justify-between items-center flex-grow">
                 <div>
                   <h3 className="font-semibold">{a.name}</h3>
                   <p className="text-sm text-muted-foreground">{a.email}</p>

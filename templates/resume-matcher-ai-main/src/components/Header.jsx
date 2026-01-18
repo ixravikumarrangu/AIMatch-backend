@@ -1,18 +1,63 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, Briefcase, Users, Info, Mail, Sparkles } from "lucide-react";
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const [userAuth, setUserAuth] = useState(null);
+  const [companyAuth, setCompanyAuth] = useState(null);
 
-  const navLinks = [
-    { to: "/", label: "Home", icon: Briefcase },
-    { to: "/company/login", label: "Company", icon: Briefcase },
-    { to: "/user/login", label: "Users", icon: Users },
-    { to: "/about", label: "About", icon: Info },
-    { to: "/contact", label: "Contact", icon: Mail },
-  ];
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("userData") || "null");
+    const company = JSON.parse(localStorage.getItem("companyData") || "null");
+    if (user) setUserAuth(user);
+    if (company) setCompanyAuth(company);
+  }, []);
+
+  const getNavLinks = () => {
+    const commonLinks = [
+      { to: "/", label: "Home", icon: Briefcase },
+      { to: "/about", label: "About", icon: Info },
+      { to: "/contact", label: "Contact", icon: Mail },
+    ];
+
+    if (companyAuth) {
+      return [
+        ...commonLinks,
+        { to: "/company/dashboard", label: "Dashboard", icon: Briefcase },
+      ];
+    }
+    if (userAuth) {
+      return [
+        ...commonLinks,
+        { to: "/user/dashboard", label: "Dashboard", icon: Users },
+      ];
+    }
+
+    return [
+      { to: "/", label: "Home", icon: Briefcase },
+      { to: "/company/login", label: "Company", icon: Briefcase },
+      { to: "/user/login", label: "Users", icon: Users },
+      { to: "/about", label: "About", icon: Info },
+      { to: "/contact", label: "Contact", icon: Mail },
+    ];
+  };
+
+  const navLinks = getNavLinks();
+  const logoLink = companyAuth
+    ? "/company/dashboard"
+    : userAuth
+    ? "/user/dashboard"
+    : "/";
+
+  const ctaLink = companyAuth
+    ? "/company/dashboard"
+    : userAuth
+    ? "/user/dashboard"
+    : "/company/login";
+  
+  const ctaText = (companyAuth || userAuth) ? "Dashboard" : "Get Started";
 
   const isActive = (path) => {
     if (path === "/") {
@@ -26,7 +71,7 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
+          <Link to={logoLink} className="flex items-center gap-2 group">
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-glow transition-transform group-hover:scale-105">
               <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
@@ -53,8 +98,8 @@ const Header = () => {
 
           {/* CTA Button - Desktop */}
           <div className="hidden md:block">
-            <Link to="/company/login" className="btn-primary">
-              Get Started
+            <Link to={ctaLink} className="btn-primary">
+              {ctaText}
             </Link>
           </div>
 
@@ -91,11 +136,11 @@ const Header = () => {
                 </Link>
               ))}
               <Link
-                to="/company/login"
+                to={ctaLink}
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="btn-primary mt-2 text-center"
               >
-                Get Started
+                {ctaText}
               </Link>
             </div>
           </nav>

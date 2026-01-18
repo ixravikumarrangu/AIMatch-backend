@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CompanyCredentials, CompanyProfile, CompanyJobDescription, JobRequiredSkills
+from .models import CompanyCredentials, CompanyProfile, CompanyJobDescription, JobRequiredSkills, Shortlist
 
 class CompanyNameSerializer(serializers.ModelSerializer):
     class Meta:
@@ -45,4 +45,9 @@ from .models import JobApplicant
 class JobApplicantSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobApplicant
+        fields = '__all__'
+
+class ShortlistSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Shortlist
         fields = '__all__'

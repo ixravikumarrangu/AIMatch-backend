@@ -1,5 +1,6 @@
 
 from django.urls import path, include
+from . import views
 from rest_framework.routers import DefaultRouter
 
 from company.api import (
@@ -10,6 +11,8 @@ from company.api import (
     get_job_applicants,
     login_company
 )
+
+from .views import send_shortlist_emails_view
 
 router = DefaultRouter()
 router.register(r"company-credentials", CompanyCredentialsViewSet)
@@ -23,4 +26,5 @@ urlpatterns = [
 
     # 🔥 Company job → applicants
     path("jobs/<int:job_id>/applications/", get_job_applicants),
+    path("send-shortlist-emails/", views.send_shortlist_emails_view, name="send_shortlist_emails"),
 ]

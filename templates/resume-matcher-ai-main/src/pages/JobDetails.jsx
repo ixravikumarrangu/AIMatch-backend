@@ -498,7 +498,7 @@ const JobDetails = () => {
       <header className="sticky top-0 z-50 glass-card border-b border-border/50">
         <div className="container mx-auto px-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 h-auto sm:h-16 py-3 sm:py-0">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/user/dashboard" className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-primary-foreground" />
               </div>
